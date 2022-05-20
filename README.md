@@ -1,0 +1,1 @@
+jboi is a CLI tool to prettify json files written in rust
