@@ -20,8 +20,8 @@ pub struct Token<'a> {
     col: usize,
 }
 
-impl Token<'_> {
-    fn from_punctuator(c: char, line: usize, col: usize) -> Token<'static> {
+impl<'a> Token<'a> {
+    fn from_punctuator(c: char, line: usize, col: usize) -> Token<'a> {
         let token_type = match c {
             '{' => TokenType::OpenCurly,
             '}' => TokenType::CloseCurly,
@@ -39,11 +39,11 @@ impl Token<'_> {
         }
     }
 
-    fn from_quoted_str<'a>(string: &'a str, line: usize, col: usize) -> Token {
+    fn from_quoted_str(string: &'a str, line: usize, col: usize) -> Token {
         let token_string = &string[1..string.len() - 1];
 
         Token {
-            token_type: TokenType::<'a>::String(token_string),
+            token_type: TokenType::String(token_string),
             line,
             col,
         }
@@ -99,9 +99,9 @@ fn is_quote(c: char) -> bool {
 }
 
 pub fn lex(s: &str) -> Vec<Token> {
-    // Lexers are always long functions (at least for me every time I write one :D) 
+    // Lexers are always long functions (at least for me every time I write one :D)
 
-    let mut state = LexerState::new(); 
+    let mut state = LexerState::new();
     let mut tokens = vec![];
 
     for (line_no, line_str) in s.split_terminator('\n').enumerate() {
@@ -255,7 +255,7 @@ mod tests {
                 token_type: TokenType::Comma,
                 line: 1,
                 col: 10,
-            }
+            },
         ];
 
         assert_eq!(tokens, expected);
