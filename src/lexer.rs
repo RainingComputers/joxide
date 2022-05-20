@@ -99,8 +99,6 @@ fn is_quote(c: char) -> bool {
 }
 
 pub fn lex(s: &str) -> Vec<Token> {
-    // Lexers are always long functions (at least for me every time I write one :D)
-
     let mut state = LexerState::new();
     let mut tokens = vec![];
 
