@@ -10,6 +10,7 @@ pub enum TokenType<'a> {
     OpenSquare,
     CloseSquare,
     Colon,
+    Comma,
 }
 
 #[derive(Debug, PartialEq)]
@@ -27,6 +28,7 @@ impl Token<'_> {
             '[' => TokenType::OpenSquare,
             ']' => TokenType::CloseSquare,
             ':' => TokenType::Colon,
+            ',' => TokenType::Comma,
             _ => panic!("Not a valid punctuator character"),
         };
 
@@ -89,7 +91,7 @@ impl LexerState {
 }
 
 fn is_punctuator(c: char) -> bool {
-    return c == '{' || c == '}' || c == '[' || c == ']' || c == ':';
+    return c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == ',';
 }
 
 fn is_quote(c: char) -> bool {
@@ -97,7 +99,9 @@ fn is_quote(c: char) -> bool {
 }
 
 pub fn lex(s: &str) -> Vec<Token> {
-    let mut state = LexerState::new();
+    // Lexers are always long functions (at least for me every time I write one :D) 
+
+    let mut state = LexerState::new(); 
     let mut tokens = vec![];
 
     for (line_no, line_str) in s.split_terminator('\n').enumerate() {
@@ -229,7 +233,7 @@ mod tests {
 
     #[test]
     fn test_lexer_3() {
-        let tokens = lex("\n {\"bar\" ]");
+        let tokens = lex("\n {\"bar\" ] ,");
 
         let expected = vec![
             Token {
@@ -247,6 +251,11 @@ mod tests {
                 line: 1,
                 col: 8,
             },
+            Token {
+                token_type: TokenType::Comma,
+                line: 1,
+                col: 10,
+            }
         ];
 
         assert_eq!(tokens, expected);
