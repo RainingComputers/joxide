@@ -4,7 +4,7 @@ pub enum TokenType<'a> {
     Bool(bool),
     Number(f64),
     String(&'a str),
-    KeyOrVal(&'a str),
+    Key(&'a str),
     OpenCurly,
     CloseCurly,
     OpenSquare,
@@ -57,7 +57,7 @@ impl Token<'_> {
                     "null" => TokenType::Null,
                     "true" => TokenType::Bool(true),
                     "false" => TokenType::Bool(false),
-                    _ => TokenType::KeyOrVal(symbol),
+                    _ => TokenType::Key(symbol),
                 },
             }
         }
