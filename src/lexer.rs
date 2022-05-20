@@ -130,6 +130,13 @@ pub fn lex(s: &str) -> Vec<Token> {
                 state.building = false;
             }
 
+            if c.is_whitespace() && !state.inside_quotes {
+                let token =
+                    Token::from_key_or_val(&line_str[state.start..col_no + 1], line_no, col_no);
+
+                tokens.push(token);
+            }
+
             if is_quote(c) {
                 if state.prev_char_escape {
                     continue;
@@ -149,13 +156,6 @@ pub fn lex(s: &str) -> Vec<Token> {
                 state.building = false;
                 state.inside_quotes = false;
                 continue;
-            }
-
-            if c.is_whitespace() && !state.inside_quotes {
-                let token =
-                    Token::from_key_or_val(&line_str[state.start..col_no + 1], line_no, col_no);
-
-                tokens.push(token);
             }
 
             if c == '\\' {
