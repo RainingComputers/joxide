@@ -81,6 +81,26 @@ fn expect<'a>(
     }
 }
 
+fn check_trailing_comma<'a>(
+    last_comma: Option<&'a Token<'a>>,
+    i: usize,
+) -> Result<usize, ParseError<'a>> {
+    match last_comma {
+        Some(token) => {
+            if token.col == i + 1 {
+                Err(ParseError::new(
+                    ParseErrorType::TrailingComma,
+                    Some(token),
+                    None,
+                ))
+            } else {
+                Ok(i)
+            }
+        }
+        None => Ok(i),
+    }
+}
+
 fn for_each_comma<'a, G, B>(
     getter: G,
     mut builder: B,
@@ -125,20 +145,7 @@ where
         }
     }
 
-    match last_comma {
-        Some(token) => {
-            if token.col == i + 1 {
-                Err(ParseError::new(
-                    ParseErrorType::TrailingComma,
-                    Some(token),
-                    None,
-                ))
-            } else {
-                Ok(i)
-            }
-        }
-        None => Ok(i),
-    }
+    check_trailing_comma(last_comma, i)
 }
 
 fn expect_key<'a>(tokens: &'a Vec<Token>, i: usize) -> Result<&'a str, ParseError<'a>> {
