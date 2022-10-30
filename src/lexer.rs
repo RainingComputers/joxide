@@ -4,7 +4,7 @@ pub enum TokenType<'a> {
     Bool(bool),
     Number(f64),
     String(&'a str),
-    Key(&'a str),
+    Invalid(&'a str),
     OpenCurly,
     CloseCurly,
     OpenSquare,
@@ -15,9 +15,9 @@ pub enum TokenType<'a> {
 
 #[derive(Debug, PartialEq)]
 pub struct Token<'a> {
-    token_type: TokenType<'a>,
-    line: usize,
-    col: usize,
+    pub token_type: TokenType<'a>,
+    pub line: usize,
+    pub col: usize,
 }
 
 impl<'a> Token<'a> {
@@ -57,7 +57,7 @@ impl<'a> Token<'a> {
                     "null" => TokenType::Null,
                     "true" => TokenType::Bool(true),
                     "false" => TokenType::Bool(false),
-                    _ => TokenType::Key(symbol),
+                    _ => TokenType::Invalid(symbol),
                 },
             }
         }
@@ -72,24 +72,6 @@ impl<'a> Token<'a> {
     }
 }
 
-struct LexerState {
-    start: usize,
-    building: bool,
-    inside_quotes: bool,
-    prev_char_escape: bool,
-}
-
-impl LexerState {
-    fn new() -> LexerState {
-        LexerState {
-            start: 0,
-            building: false,
-            inside_quotes: false,
-            prev_char_escape: false,
-        }
-    }
-}
-
 fn is_punctuator(c: char) -> bool {
     return c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == ',';
 }
@@ -99,65 +81,71 @@ fn is_quote(c: char) -> bool {
 }
 
 pub fn lex(s: &str) -> Vec<Token> {
-    let mut state = LexerState::new();
     let mut tokens = vec![];
+
+    let mut start: usize = 0;
+    let mut building = false;
+    let mut inside_quotes = false;
+    let mut prev_char_escape = false;
 
     for (line_no, line_str) in s.split_terminator('\n').enumerate() {
         for (col_no, c) in line_str.chars().enumerate() {
-            if !state.building && c.is_whitespace() {
-                continue;
-            }
-
-            if !state.building {
-                state.start = col_no;
-                state.building = true;
-            }
-
-            if is_punctuator(c) && !state.inside_quotes {
-                if state.start != col_no {
-                    let token = Token::from_key_or_val(
-                        &line_str[state.start..col_no],
-                        line_no,
-                        state.start,
-                    );
-
-                    tokens.push(token);
-                }
-
-                tokens.push(Token::from_punctuator(c, line_no, col_no));
-                state.building = false;
-            }
-
-            if c.is_whitespace() && !state.inside_quotes {
-                let token =
-                    Token::from_key_or_val(&line_str[state.start..col_no + 1], line_no, col_no);
-
-                tokens.push(token);
-            }
-
-            if is_quote(c) {
-                if state.prev_char_escape {
+            if !building {
+                if c.is_whitespace() {
                     continue;
                 }
 
-                if !state.inside_quotes {
-                    state.inside_quotes = true;
+                start = col_no;
+                building = true;
+            }
+
+            if !inside_quotes {
+                if is_punctuator(c) {
+                    if start != col_no {
+                        let token =
+                            Token::from_key_or_val(&line_str[start..col_no], line_no, start);
+
+                        tokens.push(token);
+                    }
+
+                    tokens.push(Token::from_punctuator(c, line_no, col_no));
+                    building = false;
+                } else if c.is_whitespace() {
+                    let token = Token::from_key_or_val(&line_str[start..col_no], line_no, start);
+
+                    tokens.push(token);
+                    building = false;
+                } else if col_no == line_str.len() - 1 {
+                    let token =
+                        Token::from_key_or_val(&line_str[start..col_no + 1], line_no, start);
+
+                    tokens.push(token);
+                    building = false;
+                }
+            }
+
+            if is_quote(c) {
+                if prev_char_escape {
+                    continue;
+                }
+
+                if !inside_quotes {
+                    inside_quotes = true;
                     continue;
                 }
 
                 tokens.push(Token::from_quoted_str(
-                    &line_str[state.start..col_no + 1],
+                    &line_str[start..col_no + 1],
                     line_no,
-                    state.start,
+                    start,
                 ));
 
-                state.building = false;
-                state.inside_quotes = false;
-                continue;
+                building = false;
+                inside_quotes = false;
             }
 
             if c == '\\' {
-                state.prev_char_escape = true
+                prev_char_escape = true
             }
         }
     }
@@ -261,7 +249,7 @@ mod tests {
 
     #[test]
     fn test_lexer_4() {
-        let tokens = lex("\n {\"bar\"]:\n\"foo\"");
+        let tokens = lex("\n {\"bar\"]");
 
         let expected = vec![
             Token {
@@ -279,15 +267,124 @@ mod tests {
                 line: 1,
                 col: 7,
             },
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_5() {
+        let tokens = lex("\n {bar]:\n\"foo\"");
+
+        let expected = vec![
+            Token {
+                token_type: TokenType::OpenCurly,
+                line: 1,
+                col: 1,
+            },
+            Token {
+                token_type: TokenType::Invalid("bar"),
+                line: 1,
+                col: 2,
+            },
+            Token {
+                token_type: TokenType::CloseSquare,
+                line: 1,
+                col: 5,
+            },
             Token {
                 token_type: TokenType::Colon,
                 line: 1,
-                col: 8,
+                col: 6,
             },
             Token {
                 token_type: TokenType::String("foo"),
                 line: 2,
                 col: 0,
+            },
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_6() {
+        let tokens = lex("bar");
+
+        let expected = vec![Token {
+            token_type: TokenType::Invalid("bar"),
+            line: 0,
+            col: 0,
+        }];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_7() {
+        let tokens = lex("\"bar\"");
+
+        let expected = vec![Token {
+            token_type: TokenType::String("bar"),
+            line: 0,
+            col: 0,
+        }];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_8() {
+        let tokens = lex("2345");
+
+        let expected = vec![Token {
+            token_type: TokenType::Number(2345.0),
+            line: 0,
+            col: 0,
+        }];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_9() {
+        let tokens = lex("2345}");
+
+        let expected = vec![
+            Token {
+                token_type: TokenType::Number(2345.0),
+                line: 0,
+                col: 0,
+            },
+            Token {
+                token_type: TokenType::CloseCurly,
+                line: 0,
+                col: 4,
+            },
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_10() {
+        let tokens = lex("2345      } 456 ");
+
+        let expected = vec![
+            Token {
+                token_type: TokenType::Number(2345.0),
+                line: 0,
+                col: 0,
+            },
+            Token {
+                token_type: TokenType::CloseCurly,
+                line: 0,
+                col: 10,
+            },
+            Token {
+                token_type: TokenType::Number(456.0),
+                line: 0,
+                col: 12,
             },
         ];
 
