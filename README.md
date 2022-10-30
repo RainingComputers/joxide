@@ -1,1 +1,1 @@
-jboi is a CLI tool to prettify json files written in rust
+joxide is a CLI tool to validate and formate json files written in rust

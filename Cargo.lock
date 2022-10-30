@@ -3,5 +3,5 @@
 version = 3
 
 [[package]]
-name = "jboi"
-version = "0.1.0"
+name = "joxide"
+version = "0.0.1"
