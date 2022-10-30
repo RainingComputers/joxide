@@ -18,6 +18,8 @@ pub enum ParseErrorType {
     UnexpectedToken,
     DuplicateKey,
     TrailingComma,
+    KeyNotInQuotes,
+    MissingColon,
 }
 
 #[derive(Debug, PartialEq)]
@@ -63,6 +65,7 @@ impl<'a> ParseContext<'a> {
 
 fn expect<'a>(
     token_type: &'a TokenType<'a>,
+    error_type: ParseErrorType,
     tokens: &'a Vec<Token>,
     i: usize,
 ) -> Result<&'a Token<'a>, ParseError<'a>> {
@@ -71,11 +74,7 @@ fn expect<'a>(
             if token.token_type == *token_type {
                 Ok(&token)
             } else {
-                Err(ParseError::new(
-                    ParseErrorType::UnexpectedToken,
-                    Some(token),
-                    Some(&token_type),
-                ))
+                Err(ParseError::new(error_type, Some(token), Some(&token_type)))
             }
         }
         None => Err(ParseError::new(ParseErrorType::UnexpectedEnd, None, None)),
@@ -95,21 +94,34 @@ where
     let mut i = start;
     let mut last_comma: Option<&'a Token<'a>> = None;
 
-    while let Ok(parse_context) = getter(tokens, i) {
-        let next = parse_context.next;
+    loop {
+        match getter(tokens, i) {
+            Ok(parse_context) => {
+                let next = parse_context.next;
 
-        if let Err(parse_error) = builder(parse_context, tokens.get(i)) {
-            return Err(parse_error);
-        };
+                if let Err(parse_error) = builder(parse_context, tokens.get(i)) {
+                    return Err(parse_error);
+                };
 
-        i = next;
+                i = next;
 
-        match expect(&TokenType::Comma, tokens, i) {
-            Ok(token) => {
-                last_comma = Some(token);
-                i += 1;
+                match expect(
+                    &TokenType::Comma,
+                    ParseErrorType::UnexpectedToken,
+                    tokens,
+                    i,
+                ) {
+                    Ok(token) => {
+                        last_comma = Some(token);
+                        i += 1;
+                    }
+                    Err(_) => break,
+                }
             }
-            Err(_) => break,
+            Err(parse_error) => match parse_error.error_type {
+                ParseErrorType::UnexpectedToken => break,
+                _ => return Err(parse_error),
+            },
         }
     }
 
@@ -129,12 +141,12 @@ where
     }
 }
 
-fn expect_string<'a>(tokens: &'a Vec<Token>, i: usize) -> Result<&'a str, ParseError<'a>> {
+fn expect_key<'a>(tokens: &'a Vec<Token>, i: usize) -> Result<&'a str, ParseError<'a>> {
     match tokens.get(i) {
         Some(token) => match token.token_type {
             TokenType::String(s) => Ok(s),
             _ => Err(ParseError::new(
-                ParseErrorType::UnexpectedToken,
+                ParseErrorType::KeyNotInQuotes,
                 Some(token),
                 None,
             )),
@@ -147,12 +159,17 @@ fn key_value_pair<'a>(
     tokens: &'a Vec<Token>,
     start: usize,
 ) -> Result<ParseContext<'a>, ParseError<'a>> {
-    let key = match expect_string(tokens, start) {
+    let key = match expect_key(tokens, start) {
         Ok(k) => k,
         Err(parse_error) => return Err(parse_error),
     };
 
-    expect(&TokenType::Colon, tokens, start + 1)?;
+    expect(
+        &TokenType::Colon,
+        ParseErrorType::MissingColon,
+        tokens,
+        start + 1,
+    )?;
 
     let value_parse_context = value(tokens, start + 2)?;
 
@@ -179,7 +196,12 @@ fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, 
 
     let value = Json::Object(Box::new(object));
 
-    match expect(&TokenType::CloseCurly, tokens, i) {
+    match expect(
+        &TokenType::CloseCurly,
+        ParseErrorType::UnexpectedToken,
+        tokens,
+        i,
+    ) {
         Ok(_) => Ok(ParseContext::new(value, i + 1)),
         Err(parse_error) => return Err(parse_error),
     }
@@ -196,7 +218,12 @@ fn array<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, P
 
     let value = Json::Array(Box::new(array));
 
-    match expect(&TokenType::CloseSquare, tokens, i) {
+    match expect(
+        &TokenType::CloseSquare,
+        ParseErrorType::UnexpectedToken,
+        tokens,
+        i,
+    ) {
         Ok(_) => Ok(ParseContext::new(value, i + 1)),
         Err(parse_error) => Err(parse_error),
     }
@@ -342,15 +369,15 @@ mod tests {
             ),
             (
                 "{\"foo\":123, foo: 432}",
-                ParseErrorType::UnexpectedToken,
+                ParseErrorType::KeyNotInQuotes,
                 5,
-                Some(&TokenType::CloseCurly),
+                None,
             ),
             (
                 "{\"foo\" 123}",
-                ParseErrorType::UnexpectedToken,
-                1,
-                Some(&TokenType::CloseCurly),
+                ParseErrorType::MissingColon,
+                2,
+                Some(&TokenType::Colon),
             ),
         ];
 
