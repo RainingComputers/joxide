@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::lexer::{Token, TokenType};
 
@@ -8,7 +8,7 @@ pub enum Json<'a> {
     Bool(bool),
     Number(f64),
     String(&'a str),
-    Object(Box<HashMap<&'a str, Json<'a>>>),
+    Object(Box<BTreeMap<&'a str, Json<'a>>>),
     Array(Box<Vec<Json<'a>>>),
 }
 
@@ -188,7 +188,7 @@ fn key_value_pair<'a>(
 }
 
 fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, ParseError<'a>> {
-    let mut object = HashMap::new();
+    let mut object = Box::new(BTreeMap::new());
     let builder = |parse_context: ParseContext<'a>, token: Option<&'a Token<'a>>| match object
         .insert(parse_context.key, parse_context.value)
     {
@@ -201,7 +201,7 @@ fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, 
         Err(parse_error) => return Err(parse_error),
     };
 
-    let value = Json::Object(Box::new(object));
+    let value = Json::Object(object);
 
     match expect(
         &TokenType::CloseCurly,
@@ -215,7 +215,7 @@ fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, 
 }
 
 fn array<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, ParseError<'a>> {
-    let mut array = vec![];
+    let mut array = Box::new(vec![]);
     let builder = |parse_context: ParseContext<'a>, _| Ok(array.push(parse_context.value));
 
     let i = match for_each_comma(value, builder, tokens, start + 1) {
@@ -223,7 +223,7 @@ fn array<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, P
         Err(parse_error) => return Err(parse_error),
     };
 
-    let value = Json::Array(Box::new(array));
+    let value = Json::Array(array);
 
     match expect(
         &TokenType::CloseSquare,
@@ -323,17 +323,17 @@ mod tests {
             ("\"foo\"", Ok(Json::String("foo"))),
             (
                 "{\"foo\":{   \"bar\":1234}   }",
-                Ok(Json::Object(Box::new(HashMap::from([(
+                Ok(Json::Object(Box::new(BTreeMap::from([(
                     "foo",
-                    Json::Object(Box::new(HashMap::from([("bar", Json::Number(1234.0))]))),
+                    Json::Object(Box::new(BTreeMap::from([("bar", Json::Number(1234.0))]))),
                 )])))),
             ),
             (
                 "{\"foo\":{   \"bar\":1234},  \"another\": \"testing\" }",
-                Ok(Json::Object(Box::new(HashMap::from([
+                Ok(Json::Object(Box::new(BTreeMap::from([
                     (
                         "foo",
-                        Json::Object(Box::new(HashMap::from([("bar", Json::Number(1234.0))]))),
+                        Json::Object(Box::new(BTreeMap::from([("bar", Json::Number(1234.0))]))),
                     ),
                     ("another", Json::String("testing")),
                 ])))),
