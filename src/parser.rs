@@ -24,9 +24,9 @@ pub enum ParseErrorType {
 
 #[derive(Debug, PartialEq)]
 pub struct ParseError<'a> {
-    error_type: ParseErrorType,
-    token: Option<&'a Token<'a>>,
-    expected: Option<&'a TokenType<'a>>,
+    pub error_type: ParseErrorType,
+    pub token: Option<&'a Token<'a>>,
+    pub expected: Option<&'a TokenType<'a>>,
 }
 
 impl<'a> ParseError<'a> {
