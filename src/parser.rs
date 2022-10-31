@@ -82,15 +82,16 @@ fn expect<'a>(
 }
 
 fn check_trailing_comma<'a>(
-    last_comma: Option<&'a Token<'a>>,
+    tokens: &'a Vec<Token>,
+    last_comma: Option<usize>,
     i: usize,
 ) -> Result<usize, ParseError<'a>> {
     match last_comma {
-        Some(token) => {
-            if token.col == i + 1 {
+        Some(index) => {
+            if index == i - 1 {
                 Err(ParseError::new(
                     ParseErrorType::TrailingComma,
-                    Some(token),
+                    tokens.get(index),
                     None,
                 ))
             } else {
@@ -112,7 +113,7 @@ where
     B: FnMut(ParseContext<'a>, Option<&'a Token<'a>>) -> Result<(), ParseError<'a>>,
 {
     let mut i = start;
-    let mut last_comma: Option<&'a Token<'a>> = None;
+    let mut last_comma: Option<usize> = None;
 
     loop {
         match getter(tokens, i) {
@@ -131,8 +132,8 @@ where
                     tokens,
                     i,
                 ) {
-                    Ok(token) => {
-                        last_comma = Some(token);
+                    Ok(_) => {
+                        last_comma = Some(i);
                         i += 1;
                     }
                     Err(_) => break,
@@ -145,18 +146,17 @@ where
         }
     }
 
-    check_trailing_comma(last_comma, i)
+    check_trailing_comma(tokens, last_comma, i)
 }
 
 fn expect_key<'a>(tokens: &'a Vec<Token>, i: usize) -> Result<&'a str, ParseError<'a>> {
     match tokens.get(i) {
         Some(token) => match token.token_type {
             TokenType::String(s) => Ok(s),
-            _ => Err(ParseError::new(
-                ParseErrorType::KeyNotInQuotes,
-                Some(token),
-                None,
-            )),
+            TokenType::Invalid(_) | TokenType::Number(_) | TokenType::Bool(_) => Err(
+                ParseError::new(ParseErrorType::KeyNotInQuotes, Some(token), None),
+            ),
+            _ => Err(ParseError::new(ParseErrorType::UnexpectedToken, None, None)),
         },
         None => Err(ParseError::new(ParseErrorType::UnexpectedEnd, None, None)),
     }
@@ -366,6 +366,36 @@ mod tests {
                 ParseErrorType::UnexpectedToken,
                 6,
                 Some(&TokenType::CloseSquare),
+            ),
+            (
+                "{\"hello\": \"world\", \"foo\": \"bar\",}",
+                ParseErrorType::TrailingComma,
+                8,
+                None,
+            ),
+            (
+                "{\"hello\": \"world\", \"foo\": \"bar\" \"another\": \"1234\"}",
+                ParseErrorType::UnexpectedToken,
+                8,
+                Some(&TokenType::CloseCurly),
+            ),
+            (
+                "{\"hello\": \"world\", \"foo\": \"bar\", another: \"1234\"}",
+                ParseErrorType::KeyNotInQuotes,
+                9,
+                None,
+            ),
+            (
+                "{\"hello\": \"world\", \"foo\": \"bar\", 1234: \"1234\"}",
+                ParseErrorType::KeyNotInQuotes,
+                9,
+                None,
+            ),
+            (
+                "{\"hello\": \"world\", \"foo\": \"bar\", true: \"1234\"}",
+                ParseErrorType::KeyNotInQuotes,
+                9,
+                None,
             ),
             ("[1, 2, 3,]", ParseErrorType::TrailingComma, 6, None),
             (
