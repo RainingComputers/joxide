@@ -10,8 +10,9 @@ readme = "README.md"
 authors = ["RainingComputers <vishnu.vish.shankar@gmail.com>"]
 keywords = ["cli", "json", "terminal", "tool"]
 categories = ["command-line-utilities"]
-exclude = [
-    ".vscode/*",
+include = [
+    "**/*.rs",
+    "Cargo.toml",
 ]
 
 [dependencies]
