@@ -1,6 +1,7 @@
 use std::{env, process::ExitCode};
 
 mod diagnostic;
+mod formatter;
 mod lexer;
 mod parser;
 mod pretty;
@@ -24,7 +25,7 @@ fn main() -> ExitCode {
     };
 
     let tokens = lexer::lex(&raw);
-    match parser::parse(&tokens) {
+    let value = match parser::parse(&tokens) {
         Ok(value) => value,
         Err(parse_error) => {
             if let Some(token) = parse_error.token {
@@ -36,6 +37,8 @@ fn main() -> ExitCode {
             return ExitCode::FAILURE;
         }
     };
+
+    println!("{}", formatter::format_json(value, 3));
 
     return ExitCode::SUCCESS;
 }

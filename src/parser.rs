@@ -1,5 +1,5 @@
-use std::collections::BTreeMap;
 use crate::lexer::{Token, TokenType};
+use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq)]
 pub enum Json<'a> {
