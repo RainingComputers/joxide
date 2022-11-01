@@ -19,6 +19,8 @@ pub enum ParseErrorType {
     TrailingComma,
     KeyNotInQuotes,
     MissingColon,
+    MissingCloseCurly,
+    MissingCloseSquare,
 }
 
 #[derive(Debug, PartialEq)]
@@ -204,7 +206,7 @@ fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, 
 
     match expect(
         &TokenType::CloseCurly,
-        ParseErrorType::UnexpectedToken,
+        ParseErrorType::MissingCloseCurly,
         tokens,
         i,
     ) {
@@ -226,7 +228,7 @@ fn array<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, P
 
     match expect(
         &TokenType::CloseSquare,
-        ParseErrorType::UnexpectedToken,
+        ParseErrorType::MissingCloseSquare,
         tokens,
         i,
     ) {
@@ -362,7 +364,7 @@ mod tests {
         let cases: Vec<(&str, ParseErrorType, usize, Option<&TokenType>)> = vec![
             (
                 "[ 1, 2, 3 4]",
-                ParseErrorType::UnexpectedToken,
+                ParseErrorType::MissingCloseSquare,
                 6,
                 Some(&TokenType::CloseSquare),
             ),
@@ -374,7 +376,7 @@ mod tests {
             ),
             (
                 "{\"hello\": \"world\", \"foo\": \"bar\" \"another\": \"1234\"}",
-                ParseErrorType::UnexpectedToken,
+                ParseErrorType::MissingCloseCurly,
                 8,
                 Some(&TokenType::CloseCurly),
             ),
@@ -414,6 +416,12 @@ mod tests {
                 ParseErrorType::MissingColon,
                 2,
                 Some(&TokenType::Colon),
+            ),
+            (
+                "{\"a\":\"b\",\"f\":[2 3]}",
+                ParseErrorType::MissingCloseSquare,
+                9,
+                Some(&TokenType::CloseSquare),
             ),
         ];
 

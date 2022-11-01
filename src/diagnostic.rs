@@ -25,7 +25,9 @@ fn get_message_unexpected_token<'a>(parse_error: &'a ParseError<'a>) -> String {
 pub fn get_message<'a>(parse_error: &'a ParseError<'a>) -> String {
     match parse_error.error_type {
         ParseErrorType::UnexpectedEnd => "File ended unexpectedly".to_string(),
-        ParseErrorType::UnexpectedToken => get_message_unexpected_token(parse_error),
+        ParseErrorType::UnexpectedToken
+        | ParseErrorType::MissingCloseCurly
+        | ParseErrorType::MissingCloseSquare => get_message_unexpected_token(parse_error),
         ParseErrorType::TrailingComma => "Trailing commas are not valid".to_string(),
         ParseErrorType::DuplicateKey => "Duplicate keys are not valid".to_string(),
         ParseErrorType::KeyNotInQuotes => "Key should be in quotes".to_string(),
