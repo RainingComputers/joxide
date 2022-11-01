@@ -22,7 +22,7 @@ pub struct FormatArgs {
     /// indent length, default is 4
     pub indent_length: usize,
 
-    #[argh(option, default = "false")]
+    #[argh(switch)]
     /// modify the file instead of printing to console
     pub write: bool,
 
