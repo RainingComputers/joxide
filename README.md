@@ -24,6 +24,12 @@ At test.json:5:9
 Did not expect '3', expected ']'. Forgot a comma maybe?
 ```
 
+## Install
+
+```
+cargo install joxide
+```
+
 ## Usage
 
 _Formatting files_
