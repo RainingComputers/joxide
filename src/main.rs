@@ -19,7 +19,7 @@ fn main() -> ExitCode {
     let raw = match std::fs::read_to_string(file_path) {
         Ok(content) => content,
         Err(err) => {
-            println!("Unable to open file, reason: {:?}", err);
+            println!("Unable to open file, reason: {}", err.to_string());
             return ExitCode::FAILURE;
         }
     };
