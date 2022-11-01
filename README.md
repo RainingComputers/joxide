@@ -1,6 +1,6 @@
 # joxide
 
-joxide is a CLI tool to validate and formate json files written in rust. The parser and the validator is completely written from scratch and uses [argh](https://github.com/google/argh) to parse CLI arguments.
+joxide is a CLI tool to validate and format json files written in rust. The parser, validator and the formatter are completely written from scratch and uses [argh](https://github.com/google/argh) to parse CLI arguments.
 
 _test.json_
 
