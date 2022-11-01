@@ -26,13 +26,13 @@ Did not expect '3', expected ']'. Forgot a comma maybe?
 
 ## Usage
 
-**Formatting files**
+_Formatting files_
 
 ```
 joxide format <file> [--indent-length <indent-length>] [--write]
 ```
 
-**Validating files**
+_Validating files_
 
 ```
 joxide validate <file>
