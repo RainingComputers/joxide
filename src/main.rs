@@ -38,7 +38,7 @@ fn main() -> ExitCode {
         }
     };
 
-    println!("{}", formatter::format_json(value, 3));
+    println!("{}", formatter::format_json(value, 4));
 
     return ExitCode::SUCCESS;
 }
