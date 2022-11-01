@@ -1,5 +1,4 @@
 use std::collections::BTreeMap;
-
 use crate::lexer::{Token, TokenType};
 
 #[derive(Debug, PartialEq)]
