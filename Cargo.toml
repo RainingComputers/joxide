@@ -1,8 +1,15 @@
 [package]
 name = "joxide"
 version = "0.0.1"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "MIT"
+description = "CLI tool to validate and format json files"
+homepage = "https://github.com/RainingComputers/joxide"
+repository = "https://github.com/RainingComputers/joxide"
+documentation = "https://github.com/RainingComputers/joxide"
+readme = "README.md"
+authors = ["RainingComputers <vishnu.vish.shankar@gmail.com>"]
+keywords = ["cli", "json", "terminal", "tool"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 argh = "0.1.9"
