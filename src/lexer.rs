@@ -16,19 +16,19 @@ pub enum TokenType<'a> {
 }
 
 impl fmt::Display for TokenType<'_> {
-    fn fmt<'a>(&'a self, f: &mut fmt::Formatter) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> std::fmt::Result {
         match self {
-            TokenType::Null => write!(f, "{}", "null"),
+            TokenType::Null => write!(f, "null"),
             TokenType::Bool(b) => write!(f, "{}", b),
             TokenType::Number(n) => write!(f, "{}", n),
             TokenType::String(s) => write!(f, "{}", s),
             TokenType::Invalid(s) => write!(f, "{}", s),
-            TokenType::OpenCurly => write!(f, "{}", '{'),
-            TokenType::CloseCurly => write!(f, "{}", '}'),
-            TokenType::OpenSquare => write!(f, "{}", '['),
-            TokenType::CloseSquare => write!(f, "{}", ']'),
-            TokenType::Colon => write!(f, "{}", ':'),
-            TokenType::Comma => write!(f, "{}", ','),
+            TokenType::OpenCurly => write!(f, "{{"),
+            TokenType::CloseCurly => write!(f, "}}"),
+            TokenType::OpenSquare => write!(f, "["),
+            TokenType::CloseSquare => write!(f, "]"),
+            TokenType::Colon => write!(f, ":"),
+            TokenType::Comma => write!(f, ","),
         }
     }
 }
@@ -93,11 +93,11 @@ impl<'a> Token<'a> {
 }
 
 fn is_punctuator(c: char) -> bool {
-    return c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == ',';
+    c == '{' || c == '}' || c == '[' || c == ']' || c == ':' || c == ','
 }
 
 fn is_quote(c: char) -> bool {
-    return c == '"';
+    c == '"'
 }
 
 pub fn lex(s: &str) -> Vec<Token> {

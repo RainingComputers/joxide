@@ -7,7 +7,7 @@ fn get_line(content: &str, line_number: usize) -> Option<&str> {
         }
     }
 
-    return None;
+    None
 }
 
 pub fn print_location(content: &str, token: &lexer::Token) {

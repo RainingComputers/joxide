@@ -17,10 +17,10 @@ fn main() -> ExitCode {
         JoxideSubcommand::Format(ref format_args) => &format_args.file,
     };
 
-    let raw = match std::fs::read_to_string(&file_path) {
+    let raw = match std::fs::read_to_string(file_path) {
         Ok(content) => content,
         Err(err) => {
-            println!("Unable to open file, reason: {}", err.to_string());
+            println!("Unable to open file, reason: {}", err);
             return ExitCode::FAILURE;
         }
     };
@@ -45,7 +45,7 @@ fn main() -> ExitCode {
 
         if format_args.write {
             if let Err(err) = std::fs::write(file_path, formatted) {
-                println!("Unable to write to file, reason: {}", err.to_string());
+                println!("Unable to write to file, reason: {}", err);
                 return ExitCode::FAILURE;
             }
         } else {
@@ -53,5 +53,5 @@ fn main() -> ExitCode {
         }
     }
 
-    return ExitCode::SUCCESS;
+    ExitCode::SUCCESS
 }

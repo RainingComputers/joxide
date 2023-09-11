@@ -7,8 +7,8 @@ pub enum Json<'a> {
     Bool(bool),
     Number(f64),
     String(&'a str),
-    Object(Box<BTreeMap<&'a str, Json<'a>>>),
-    Array(Box<Vec<Json<'a>>>),
+    Object(BTreeMap<&'a str, Json<'a>>),
+    Array(Vec<Json<'a>>),
 }
 
 #[derive(Debug, PartialEq)]
@@ -67,15 +67,15 @@ impl<'a> ParseContext<'a> {
 fn expect<'a>(
     token_type: &'a TokenType<'a>,
     error_type: ParseErrorType,
-    tokens: &'a Vec<Token>,
+    tokens: &'a [Token],
     i: usize,
 ) -> Result<&'a Token<'a>, ParseError<'a>> {
     match tokens.get(i) {
         Some(token) => {
             if token.token_type == *token_type {
-                Ok(&token)
+                Ok(token)
             } else {
-                Err(ParseError::new(error_type, Some(token), Some(&token_type)))
+                Err(ParseError::new(error_type, Some(token), Some(token_type)))
             }
         }
         None => Err(ParseError::new(ParseErrorType::UnexpectedEnd, None, None)),
@@ -83,7 +83,7 @@ fn expect<'a>(
 }
 
 fn check_trailing_comma<'a>(
-    tokens: &'a Vec<Token>,
+    tokens: &'a [Token],
     last_comma: Option<usize>,
     i: usize,
 ) -> Result<usize, ParseError<'a>> {
@@ -121,9 +121,7 @@ where
             Ok(parse_context) => {
                 let next = parse_context.next;
 
-                if let Err(parse_error) = builder(parse_context, tokens.get(i)) {
-                    return Err(parse_error);
-                };
+                builder(parse_context, tokens.get(i))?;
 
                 i = next;
 
@@ -150,7 +148,7 @@ where
     check_trailing_comma(tokens, last_comma, i)
 }
 
-fn expect_key<'a>(tokens: &'a Vec<Token>, i: usize) -> Result<&'a str, ParseError<'a>> {
+fn expect_key<'a>(tokens: &'a [Token], i: usize) -> Result<&'a str, ParseError<'a>> {
     match tokens.get(i) {
         Some(token) => match token.token_type {
             TokenType::String(s) => Ok(s),
@@ -189,7 +187,7 @@ fn key_value_pair<'a>(
 }
 
 fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, ParseError<'a>> {
-    let mut object = Box::new(BTreeMap::new());
+    let mut object = BTreeMap::new();
     let builder = |parse_context: ParseContext<'a>, token: Option<&'a Token<'a>>| match object
         .insert(parse_context.key, parse_context.value)
     {
@@ -211,13 +209,16 @@ fn object<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, 
         i,
     ) {
         Ok(_) => Ok(ParseContext::new(value, i + 1)),
-        Err(parse_error) => return Err(parse_error),
+        Err(parse_error) => Err(parse_error),
     }
 }
 
 fn array<'a>(tokens: &'a Vec<Token>, start: usize) -> Result<ParseContext<'a>, ParseError<'a>> {
-    let mut array = Box::new(vec![]);
-    let builder = |parse_context: ParseContext<'a>, _| Ok(array.push(parse_context.value));
+    let mut array = vec![];
+    let builder = |parse_context: ParseContext<'a>, _| {
+        array.push(parse_context.value);
+        Ok(())
+    };
 
     let i = match for_each_comma(value, builder, tokens, start + 1) {
         Ok(next) => next,
@@ -324,29 +325,29 @@ mod tests {
             ("\"foo\"", Ok(Json::String("foo"))),
             (
                 "{\"foo\":{   \"bar\":1234}   }",
-                Ok(Json::Object(Box::new(BTreeMap::from([(
+                Ok(Json::Object(BTreeMap::from([(
                     "foo",
-                    Json::Object(Box::new(BTreeMap::from([("bar", Json::Number(1234.0))]))),
-                )])))),
+                    Json::Object(BTreeMap::from([("bar", Json::Number(1234.0))])),
+                )]))),
             ),
             (
                 "{\"foo\":{   \"bar\":1234},  \"another\": \"testing\" }",
-                Ok(Json::Object(Box::new(BTreeMap::from([
+                Ok(Json::Object(BTreeMap::from([
                     (
                         "foo",
-                        Json::Object(Box::new(BTreeMap::from([("bar", Json::Number(1234.0))]))),
+                        Json::Object(BTreeMap::from([("bar", Json::Number(1234.0))])),
                     ),
                     ("another", Json::String("testing")),
-                ])))),
+                ]))),
             ),
             (
                 "[1,   2,3  ,  4]",
-                Ok(Json::Array(Box::new(vec![
+                Ok(Json::Array(vec![
                     Json::Number(1.0),
                     Json::Number(2.0),
                     Json::Number(3.0),
                     Json::Number(4.0),
-                ]))),
+                ])),
             ),
         ];
 

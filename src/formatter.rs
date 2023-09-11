@@ -49,7 +49,7 @@ where
     result
 }
 
-fn array(arr: Box<Vec<Json>>, ilvl: usize, ilen: usize) -> String {
+fn array(arr: Vec<Json>, ilvl: usize, ilen: usize) -> String {
     comma_builder(
         arr.len(),
         arr.into_iter(),
@@ -60,7 +60,7 @@ fn array(arr: Box<Vec<Json>>, ilvl: usize, ilen: usize) -> String {
     )
 }
 
-fn object(obj: Box<BTreeMap<&str, Json>>, ilvl: usize, ilen: usize) -> String {
+fn object(obj: BTreeMap<&str, Json>, ilvl: usize, ilen: usize) -> String {
     let formatter = |item: (&str, Json), ilvl: usize, ilen: usize| -> String {
         let (key, val) = item;
 
