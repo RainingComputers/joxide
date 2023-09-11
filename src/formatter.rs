@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_formatter() {
-        let raw = "{\"foo\":[1,{\"bar\":{\"foo\":\"bar\"},\"foo\":[{\"foo\":\"bar\"},{\"foo\":\"bar\"}]},3,4],\"hello\":\"world\"}";
+        let raw = "{\"foo\":[1,{\"bar\":{\"foo\":\"bar\"},\"foo\":[{\"foo\":\"bar\"},{\"foo\":\"bar\"}]},3,4],\"hello\":\"world\",\"qaz\":\"{\\\"bar\\\":0}\"}";
 
         for i in 0..10 {
             let tokens = lexer::lex(raw);

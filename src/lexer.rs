@@ -146,6 +146,7 @@ pub fn lex(s: &str) -> Vec<Token> {
 
             if is_quote(c) {
                 if prev_char_escape {
+                    prev_char_escape = false;
                     continue;
                 }
 
@@ -405,6 +406,31 @@ mod tests {
                 token_type: TokenType::Number(456.0),
                 line: 0,
                 col: 12,
+            },
+        ];
+
+        assert_eq!(tokens, expected);
+    }
+
+    #[test]
+    fn test_lexer_11() {
+        let tokens = lex("\"foo\": \"{\\\"bar\\\":0}\"");
+
+        let expected = vec![
+            Token {
+                token_type: TokenType::String("foo"),
+                line: 0,
+                col: 0,
+            },
+            Token {
+                token_type: TokenType::Colon,
+                line: 0,
+                col: 5,
+            },
+            Token {
+                token_type: TokenType::String("{\\\"bar\\\":0}"),
+                line: 0,
+                col: 7,
             },
         ];
 
