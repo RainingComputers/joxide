@@ -93,7 +93,7 @@ fn value(val: Json, ilvl: usize, ilen: usize) -> String {
 }
 
 pub fn format_json(val: Json, indent_length: usize) -> String {
-    value(val, 0, indent_length)
+    format!("{}\n", value(val, 0, indent_length))
 }
 
 #[cfg(test)]
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_formatter() {
-        let raw = "{\"foo\":[1,{\"bar\":{\"foo\":\"bar\"},\"foo\":[{\"foo\":\"bar\"},{\"foo\":\"bar\"}]},3,4],\"hello\":\"world\",\"qaz\":\"{\\\"bar\\\":0}\"}";
+        let raw = "{\"foo\":[1,{\"bar\":{\"foo\":\"bar\"},\"foo\":[{\"foo\":\"bar\"},{\"foo\":\"bar\"}]},3,4],\"hello\":\"world\",\"qaz\":\"{\\\"bar\\\":0}\"}\n";
 
         for i in 0..10 {
             let tokens = lexer::lex(raw);
@@ -122,11 +122,11 @@ mod tests {
     #[test]
     fn test_indent() {
         let expected = [
-            "{\"a\":\"b\",\"f\":[{\"a\":\"b\"},1,2,\"three\"]}",
-            "{\n \"a\": \"b\",\n \"f\": [\n  {\n   \"a\": \"b\"\n  },\n  1,\n  2,\n  \"three\"\n ]\n}",
-            "{\n  \"a\": \"b\",\n  \"f\": [\n    {\n      \"a\": \"b\"\n    },\n    1,\n    2,\n    \"three\"\n  ]\n}",
-            "{\n   \"a\": \"b\",\n   \"f\": [\n      {\n         \"a\": \"b\"\n      },\n      1,\n      2,\n      \"three\"\n   ]\n}",
-            "{\n    \"a\": \"b\",\n    \"f\": [\n        {\n            \"a\": \"b\"\n        },\n        1,\n        2,\n        \"three\"\n    ]\n}"
+            "{\"a\":\"b\",\"f\":[{\"a\":\"b\"},1,2,\"three\"]}\n",
+            "{\n \"a\": \"b\",\n \"f\": [\n  {\n   \"a\": \"b\"\n  },\n  1,\n  2,\n  \"three\"\n ]\n}\n",
+            "{\n  \"a\": \"b\",\n  \"f\": [\n    {\n      \"a\": \"b\"\n    },\n    1,\n    2,\n    \"three\"\n  ]\n}\n",
+            "{\n   \"a\": \"b\",\n   \"f\": [\n      {\n         \"a\": \"b\"\n      },\n      1,\n      2,\n      \"three\"\n   ]\n}\n",
+            "{\n    \"a\": \"b\",\n    \"f\": [\n        {\n            \"a\": \"b\"\n        },\n        1,\n        2,\n        \"three\"\n    ]\n}\n"
         ];
 
         for i in 0..5 {
