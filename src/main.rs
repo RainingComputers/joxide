@@ -1,6 +1,10 @@
 extern crate argh;
+extern crate glob;
+
 use crate::args::JoxideSubcommand;
-use std::process::ExitCode;
+use glob::{glob, GlobError, Paths, PatternError};
+use pretty::eprint_parse_error;
+use std::{path::PathBuf, process::ExitCode};
 
 mod args;
 mod diagnostic;
@@ -12,46 +16,103 @@ mod pretty;
 fn main() -> ExitCode {
     let args: args::JoxideArgs = argh::from_env();
 
-    let file_path = match args.sub_command {
-        JoxideSubcommand::Validate(ref validate_args) => &validate_args.file,
-        JoxideSubcommand::Format(ref format_args) => &format_args.file,
+    let path_matchers = match args.sub_command {
+        JoxideSubcommand::Validate(ref validate_args) => &validate_args.paths,
+        JoxideSubcommand::Format(ref format_args) => &format_args.paths,
     };
 
+    let failures: Vec<Result<(), ()>> = path_matchers
+        .iter()
+        .map(get_glob)
+        .map(|glob_result| process_glob(glob_result, &args.sub_command))
+        .collect();
+
+    match failures.len() {
+        0 => ExitCode::SUCCESS,
+        _ => ExitCode::FAILURE,
+    }
+}
+
+fn get_glob(path: &String) -> Result<Paths, PatternError> {
+    match std::fs::metadata(path) {
+        Ok(metadata) => match metadata.is_dir() {
+            true => glob(&format!("{}/**/*.json", path)),
+            false => glob(path),
+        },
+        Err(_) => glob(path),
+    }
+}
+
+fn process_glob(
+    glob_result: Result<Paths, PatternError>,
+    sub_command: &JoxideSubcommand,
+) -> Result<(), ()> {
+    match glob_result {
+        Ok(paths) => paths
+            .into_iter()
+            .map(|entry| process_glob_entry(entry, sub_command))
+            .filter(|result| result.is_err())
+            .collect(),
+        Err(err) => {
+            eprint!("Invalid glob pattern, reason: {}", err);
+            Err(())
+        }
+    }
+}
+
+fn process_glob_entry(
+    entry: Result<PathBuf, GlobError>,
+    sub_command: &JoxideSubcommand,
+) -> Result<(), ()> {
+    match entry {
+        Ok(path) => process_file(&path, sub_command),
+        Err(err) => {
+            eprint!("Unable to do a glob pattern match, reason: {}", err);
+            Err(())
+        }
+    }
+}
+
+fn process_file(file_path: &PathBuf, sub_command: &JoxideSubcommand) -> Result<(), ()> {
     let raw = match std::fs::read_to_string(file_path) {
         Ok(content) => content,
         Err(err) => {
-            println!("Unable to open file, reason: {}", err);
-            return ExitCode::FAILURE;
+            eprintln!("Unable to open file, reason: {}", err);
+            return Err(());
         }
     };
 
     let tokens = lexer::lex(&raw);
 
-    let value = match parser::parse(&tokens) {
+    let parsed_value = match parser::parse(&tokens) {
         Ok(value) => value,
         Err(parse_error) => {
-            if let Some(token) = parse_error.token {
-                println!("At {}:{}:{}", file_path, token.line + 1, token.col + 1);
-                pretty::print_location(&raw, token);
-            }
-
-            println!("{}", diagnostic::get_message(&parse_error));
-            return ExitCode::FAILURE;
+            eprint_parse_error(parse_error, &raw, file_path);
+            return Err(());
         }
     };
 
-    if let JoxideSubcommand::Format(ref format_args) = args.sub_command {
-        let formatted = formatter::format_json(value, format_args.indent_length);
+    match sub_command {
+        JoxideSubcommand::Format(format_args) => format_file(parsed_value, format_args, file_path),
+        JoxideSubcommand::Validate(_) => Ok(()),
+    }
+}
 
-        if format_args.write {
-            if let Err(err) = std::fs::write(file_path, formatted) {
-                println!("Unable to write to file, reason: {}", err);
-                return ExitCode::FAILURE;
-            }
-        } else {
-            println!("{}", formatted);
+fn format_file(
+    value: parser::Json<'_>,
+    format_args: &args::FormatArgs,
+    file_path: &PathBuf,
+) -> Result<(), ()> {
+    let formatted = formatter::format_json(value, format_args.indent_length);
+
+    if format_args.write {
+        if let Err(err) = std::fs::write(file_path, formatted) {
+            eprintln!("Unable to write to file, reason: {}", err);
+            return Err(());
         }
+    } else {
+        println!("{}", formatted);
     }
 
-    ExitCode::SUCCESS
+    Ok(())
 }

@@ -1,3 +1,4 @@
 /target
 test.json
 .DS_Store
+test/**

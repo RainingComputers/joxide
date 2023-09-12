@@ -27,8 +27,8 @@ pub struct FormatArgs {
     pub write: bool,
 
     #[argh(positional)]
-    /// path to the file you want to format
-    pub file: String,
+    /// list of paths to directory or file or unix glob pattern
+    pub paths: Vec<String>,
 }
 
 #[derive(FromArgs, PartialEq, Debug)]
@@ -36,6 +36,6 @@ pub struct FormatArgs {
 #[argh(subcommand, name = "validate")]
 pub struct ValidateArgs {
     #[argh(positional)]
-    /// path to the file you want to validate
-    pub file: String,
+    /// list of paths to directory or file or unix glob pattern
+    pub paths: Vec<String>,
 }

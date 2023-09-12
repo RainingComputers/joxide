@@ -35,11 +35,11 @@ cargo install joxide
 _Formatting files_
 
 ```
-joxide format <file> [--indent-length <indent-length>] [--write]
+joxide format <path-or-glob-or-dir> [--indent-length <indent-length>] [--write]
 ```
 
 _Validating files_
 
 ```
-joxide validate <file>
+joxide validate <path-or-glob-or-dir>
 ```
