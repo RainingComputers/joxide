@@ -59,7 +59,7 @@ impl<'a> Token<'a> {
         }
     }
 
-    fn from_quoted_str(string: &'a str, line: usize, col: usize) -> Token {
+    fn from_quoted_str(string: &'a str, line: usize, col: usize) -> Token<'a> {
         let token_string = &string[1..string.len() - 1];
 
         Token {
